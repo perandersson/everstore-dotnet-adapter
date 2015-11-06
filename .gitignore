@@ -1,0 +1,11 @@
+*.sdf
+*.opensdk
+*.suo
+*/Debug/*
+Debug/*
+*/Release/*
+Release/*
+adapters/net45/Everstore/**/obj
+adapters/net45/Everstore/**/bin
+**/bin/*
+**/obj/*
