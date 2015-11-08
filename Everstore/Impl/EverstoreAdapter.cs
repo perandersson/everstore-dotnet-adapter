@@ -34,18 +34,28 @@ namespace Everstore.Impl
 
         public Task<ITransaction> OpenTransaction(string name)
         {
-            if (name.Length < 2 || name[0] != '/')
-                throw new ArgumentException("Argument cannot be empty and must start with a '/'", "name");
-
-            if (name.IndexOf("..") != -1)
-                throw new ArgumentException("Argument cannot contain '..'", "name");
-
-            if (name.IndexOf("//") != -1)
-                throw new ArgumentException("Argument cannot contain '//'", "name");
+			ValidateJournalName(name);
 
             nextStorage = nextStorage + 1;
             var storage = storages[nextStorage % storages.Count];
             return storage.OpenTransaction(name);
         }
+
+		public Task<Boolean> JournalExists(string name)
+		{
+			ValidateJournalName(name);
+
+			nextStorage = nextStorage + 1;
+			var storage = storages[nextStorage % storages.Count];
+			return storage.JournalExists(name);
+		}
+
+		private static void ValidateJournalName(string name)
+		{
+			Validate.Require(name.Length > 2, "Name cannot be empty");
+			Validate.Require(name[0] == '/', "Name must start with a '/'");
+			Validate.Require(name.IndexOf("..") == -1, "Name cannot contain '..'");
+			Validate.Require(name.IndexOf("//") == -1, "Name cannot contain '//'");
+		}
     }
 }

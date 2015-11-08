@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Example2
+namespace Example2.Events
 {
 	/// <summary>
 	/// Interface used to categorize all UserEvent types. Database uses this when performing basic
@@ -18,6 +18,7 @@ namespace Example2
     [Serializable]
 	public class UserCreated : UserEvent
     {
-        public string Username { get; set; }
+        public string FirstName { get; set; }
+		public string LastName { get; set; }
     }
 }

@@ -45,8 +45,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="User.cs" />
-    <Compile Include="UserAddressChanged.cs" />
-    <Compile Include="UserCreated.cs" />
+    <Compile Include="Events\UserAddressChanged.cs" />
+    <Compile Include="Events\UserCreated.cs" />
+    <Compile Include="UserId.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

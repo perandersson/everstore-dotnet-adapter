@@ -112,5 +112,10 @@ namespace Everstore.Storage.Vanilla
 		{
 			return sender.ReadEventsFromJournal((TransactionImpl)transaction, offset);
 		}
+
+		public Task<Boolean> JournalExists(string name)
+		{
+			return sender.JournalExists(name);
+		}
 	}
 }

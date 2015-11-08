@@ -14,5 +14,7 @@ namespace Everstore.Storage
 		Task<ICommitResult> CommitEvents(ITransaction transaction, List<object> events);
 
 		Task<IEnumerable<object>> ReadEventsFromJournal(ITransaction transaction, Offset offset);
+
+		Task<Boolean> JournalExists(string name);
 	}
 }

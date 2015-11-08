@@ -50,6 +50,7 @@ namespace Everstore.Storage.Vanilla.State
 						new ReadJournalResponseParser.ReadJournalResponseState(
 							0, new List<Event>(), false, new byte[0]));
 				case RequestType.ROLLBACK_TRANSACTION: return new RollbackResponseParser();
+				case RequestType.JOURNAL_EXISTS: return new JournalExistsResponseParser();
 				case RequestType.ERROR: return new ErrorResponseParser();
 				default: return new UnknownResponseParser();
 			}
@@ -209,6 +210,31 @@ namespace Everstore.Storage.Vanilla.State
 		{
 			var success = reader.ReadBool();
 			return new RollbackResponseState(success);
+		}
+	}
+
+	internal sealed class JournalExistsResponseParser : IResponseParser
+	{
+		internal sealed class JournalExistsResponseState : IResponseState
+		{
+			public Option<IMessageResponse> Response { get; private set; }
+			public bool IsComplete { get { return true; } }
+
+			public JournalExistsResponseState(bool exists)
+			{
+				Response = new Some<IMessageResponse>(new JournalExistsResponse(exists));
+			}
+		}
+
+		public IResponseParser Create(IResponseState state)
+		{
+			return new JournalExistsResponseParser();
+		}
+
+		public IResponseState Parse(Header header, IEndianAwareReader reader)
+		{
+			var exists = reader.ReadBool();
+			return new JournalExistsResponseState(exists);
 		}
 	}
 

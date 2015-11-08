@@ -1,5 +1,6 @@
 ﻿using Everstore.Api;
 using Everstore.Impl;
+using Example2.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,10 +15,12 @@ namespace Example2
 		static void Main(string[] args)
 		{
 			new Program().Run();
-			Thread.Sleep(10000);
+
+			Console.WriteLine("Done! Press [enter] to continue");
+			Console.ReadLine();
 		}
 
-		private async void Run()
+		private void Run()
 		{
 			var config = new AdapterConfiguration()
 			{
@@ -32,72 +35,103 @@ namespace Example2
 
 			try
 			{
+				// Setup the example journal if it doesn't exist
+				SetupUser(adapter, new UserId(12345));
 
-				if (await AddEvents(adapter, "net45user1"))
-				{
-					var user = await LoadUserFromJournal(adapter, "net45user1");
-					Console.Write(user.Email);
-				}
-
+				var futureUser = FindUser(adapter, new UserId(12345));
+				futureUser.Wait();
+				Console.WriteLine(futureUser.Result.Email);
 			} catch(Exception e)
 			{
 				Console.WriteLine(e.ToString());
 			}
-			Console.WriteLine("Done!");
-			Console.ReadLine();
 		}
 
 		/// <summary>
-		/// Recreate the User object based on the events found in the journal
+		/// Try to find a user with the given userId
 		/// </summary>
 		/// <param name="adapter"></param>
-		/// <param name="username"></param>
+		/// <param name="userId"></param>
 		/// <returns></returns>
-		private Task<User> LoadUserFromJournal(EverstoreAdapter adapter, string username)
+		private Task<User> FindUser(EverstoreAdapter adapter, UserId userId)
 		{
-			var futureJournal = adapter.OpenTransaction("/user/" + username);
-			return Task.Run(async () =>
-			{
-				var journal = await futureJournal;
-				var events = await journal.Read();
+			string journalName = "/dotnet/example2/user-" + userId.Value;
 
-				User user = null;
-				foreach(var evt in events)
-				{
-					if (evt is UserCreated)
-					{
-						user = new User();
-						user.Username = ((UserCreated)evt).Username;
-					}
-					else if (evt is UserAddressChanged)
-					{
-						user.Email = ((UserAddressChanged)evt).Email;
-					}
-				}
-
-				return user;
-			});
+			return adapter.OpenTransaction(journalName)
+				.ContinueWith(t => t.Result.Read()).Unwrap()
+				.ContinueWith(events => LoadUserFromEvents(events.Result, userId));
 		}
 
-		private Task<bool> AddEvents(IAdapter adapter, string username)
+		/// <summary>
+		/// Recreate the User object based on the supplied events
+		/// </summary>
+		/// <param name="events"></param>
+		/// <param name="userId"></param>
+		/// <returns></returns>
+		private User LoadUserFromEvents(IEnumerable<object> events, UserId userId)
 		{
-			var futureTransaction = adapter.OpenTransaction("/user/" + username);
-			return Task.Run(async () =>
+			User user = null;
+			foreach (var evt in events)
 			{
-				var transaction = await futureTransaction;
-				transaction.Add(new UserCreated() { Username = username });
-				transaction.Add(new UserAddressChanged() { Email = "per.andersson@funnic.com" });
+				if (evt is UserCreated)
+				{
+					var uc = (UserCreated) evt;
+					user = new User();
+					user.Id = userId;
+					user.FullName = uc.FirstName + " " + uc.LastName;
+				}
+				else if (evt is UserAddressChanged)
+				{
+					user.Email = ((UserAddressChanged)evt).Email;
+				}
+			}
+			return user;
+		}
+
+		/// <summary>
+		/// Setup the journal used by this example
+		/// </summary>
+		/// <param name="adapter"></param>
+		/// <param name="userId"></param>
+		private void SetupUser(IAdapter adapter, UserId userId)
+		{
+			string journalName = "/dotnet/example2/user-" + userId.Value;
+			
+			// Check if the journal exists
+			var journalExists = WaitAndGet(adapter.JournalExists(journalName));
+			if (!journalExists)
+			{
+				var result = adapter.OpenTransaction(journalName).ContinueWith((t) =>
+				{
+					var transaction = t.Result;
+					transaction.Add(new UserCreated() { FirstName = "Per", LastName = "Andersson" });
+					transaction.Add(new UserAddressChanged() { Email = "per.andersson@funnic.com" });
+					var commit = transaction.Commit();
+					commit.Wait();
+					return commit.Result;
+				}, TaskContinuationOptions.OnlyOnRanToCompletion);
+
+				// Wait until the tasks are done
 				try
 				{
-
-					var success = await transaction.Commit();
-					return success is CommitSuccess;
-				} catch(Exception e)
-				{
-					Console.WriteLine(e.ToString());
-					return false;
+					result.Wait();
 				}
-			});
+				catch (Exception e)
+				{
+					Console.WriteLine(e);
+				}
+				
+
+				// Print error if one happened
+				if (result.Exception != null)
+					Console.WriteLine(result.Exception);
+			}
+		}
+
+		private T WaitAndGet<T>(Task<T> task)
+		{
+			task.Wait();
+			return task.Result;
 		}
 	}
 }

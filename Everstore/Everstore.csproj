@@ -79,6 +79,7 @@
     <Compile Include="Storage\Vanilla\Protocol\Messages\AuthenticateRequest.cs" />
     <Compile Include="Storage\Vanilla\Protocol\Messages\CommitTransactionPreRequest.cs" />
     <Compile Include="Storage\Vanilla\Protocol\Messages\CommitTransaction.cs" />
+    <Compile Include="Storage\Vanilla\Protocol\Messages\JournalExists.cs" />
     <Compile Include="Storage\Vanilla\Protocol\Messages\NewTransaction.cs" />
     <Compile Include="Storage\Vanilla\Protocol\Messages\ReadJournalRequest.cs" />
     <Compile Include="Storage\Vanilla\Protocol\Messages\RollbackTransaction.cs" />

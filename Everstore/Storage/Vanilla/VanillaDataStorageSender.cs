@@ -88,7 +88,7 @@ namespace Everstore.Storage.Vanilla
 			}
 			catch (Exception e)
 			{
-				Console.WriteLine(e.ToString());
+				Console.WriteLine(e);
 				Close();
 			}
 		}
@@ -115,7 +115,7 @@ namespace Everstore.Storage.Vanilla
 				}
 				catch (IOException e)
 				{
-					Console.WriteLine(e.ToString());
+					Console.WriteLine(e);
 					Close();
 				}
 			}
@@ -207,6 +207,23 @@ namespace Everstore.Storage.Vanilla
 			return tcs.Task;
 		}
 
+		public Task<Boolean> JournalExists(string name)
+		{
+			var request = JournalExistsRequest.Create(name, nextRequestUID());
+			var tcs = new TaskCompletionSource<Boolean>();
+
+			mapper.Add(request.Header.RequestUID, (response) =>
+			{
+				var r = (JournalExistsResponse)response.Body;
+				tcs.SetResult(r.Exists);
+			}, (failure) =>
+			{
+				tcs.SetException(failure);
+			});
+
+			requests.Add(request, cancellationToken.Token);
+			return tcs.Task;
+		}
 
 		internal Task<ICommitResult> CommitEvents(TransactionImpl transaction, List<object> events)
 		{
@@ -241,11 +258,8 @@ namespace Everstore.Storage.Vanilla
 			mapper.Add(request.Header.RequestUID, (response) =>
 			{
 				var r = (ReadJournalResponse)response.Body;
-				var events = r.Events.Select(evt => { return serializer.ConvertFromString(evt.Data); });
-				snapshotManager.ForEach(m =>
-				{
-					m.SaveSnapshot(transaction.Name, new SnapshotEntry(r.Bytes, r.Events));
-				});
+				var events = r.Events.Select(evt => serializer.ConvertFromString(evt.Data) );
+				snapshotManager.ForEach(m => m.SaveSnapshot(transaction.Name, new SnapshotEntry(r.Bytes, r.Events)) );
 				tcs.SetResult(events);
 			}, (failure) =>
 			{

@@ -38,19 +38,23 @@ namespace Everstore.Storage.Vanilla.IO
 
 		public void ReadBytes(int length, IntrusiveByteArrayWriter writer)
 		{
-			writer.EnsureCapacity(length);
-
-			var bytesRead = stream.Read(writer.Buffer, writer.Length, length);
-			if (bytesRead == -1) throw new IOException("Could not read bytes from the stream");
-
-			while (bytesRead < length)
+			if (length > 0)
 			{
-				var t = stream.Read(writer.Buffer, writer.Length + bytesRead, length - bytesRead);
-				if (bytesRead == -1) throw new IOException("Could not read bytes from the stream");
-				bytesRead += t;
-			}
+				writer.EnsureCapacity(length);
 
-			writer.Length += bytesRead;
+				var bytesRead = stream.Read(writer.Buffer, writer.Length, length);
+				if (bytesRead == -1) throw new IOException("Could not read bytes from the stream");
+
+				while (bytesRead < length)
+				{
+					var t = stream.Read(writer.Buffer, writer.Length + bytesRead, length - bytesRead);
+					if (bytesRead == -1) throw new IOException("Could not read bytes from the stream");
+					bytesRead += t;
+				}
+
+				// TODO: *puke*
+				writer.Length += bytesRead;
+			}
 		}
 	}
 }

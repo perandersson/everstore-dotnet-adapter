@@ -6,9 +6,13 @@ using System.Threading.Tasks;
 
 namespace Example2
 {
-	[Serializable]
-	public class UserAddressChanged : UserEvent
+	public struct UserId
 	{
-		public string Email { get; set; }
+		public readonly int Value;
+
+		public UserId(int value)
+		{
+			Value = value;
+		}
 	}
 }
